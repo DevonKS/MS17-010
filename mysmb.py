@@ -66,17 +66,17 @@ def _put_trans_data(transCmd, parameters, data, noPad=False):
 	# Note: Setup length is included when len(param) is called
 	offset = 32 + 1 + len(transCmd['Parameters']) + 2
 	
-	transData = ''
+	transData = b''
 	if len(parameters):
 		padLen = 0 if noPad else (4 - offset % 4 ) % 4
 		transCmd['Parameters']['ParameterOffset'] = offset + padLen
-		transData = ('\x00' * padLen) + parameters
+		transData = (b'\x00' * padLen) + parameters
 		offset += padLen + len(parameters)
 	
 	if len(data):
 		padLen = 0 if noPad else (4 - offset % 4 ) % 4
 		transCmd['Parameters']['DataOffset'] = offset + padLen
-		transData += ('\x00' * padLen) + data
+		transData += (b'\x00' * padLen) + data
 	
 	transCmd['Data'] = transData
 	
@@ -226,8 +226,8 @@ class MYSMB(smb.SMB):
 			pkt['Flags2'] |= smb.SMB.FLAGS2_SMB_SECURITY_SIGNATURE
 			self.signSMB(pkt, self._SigningSessionKey, self._SigningChallengeResponse)
 			
-		req = str(pkt)
-		return '\x00'*2 + pack('>H', len(req)) + req  # assume length is <65536
+		req = pkt.getData()
+		return b'\x00'*2 + pack('>H', len(req)) + req
 
 	def send_raw(self, data):
 		self.get_socket().send(data)
@@ -369,7 +369,7 @@ class MYSMB(smb.SMB):
 		self.send_raw(self.create_nt_trans_secondary_packet(mid, param, paramDisplacement, data, dataDisplacement, pid, tid, noPad))
 
 	def recv_transaction_data(self, mid, minLen):
-		data = ''
+		data = b''
 		while len(data) < minLen:
 			recvPkt = self.recvSMB()
 			if recvPkt['Mid'] != mid:
